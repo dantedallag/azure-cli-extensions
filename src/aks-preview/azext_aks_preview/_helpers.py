@@ -403,8 +403,8 @@ def _check_if_extension_type_is_in_allow_list(extension_type_name):
 
 def raise_validation_error_if_extension_type_not_in_allow_list(extension_type_name):
     if not _check_if_extension_type_is_in_allow_list(extension_type_name):
-        raise ValidationError(f"Failed to get extension type version by cluster for {extension_type_name.lower()} " +
-                              f"as it is not in allowed list of extension types {allowed_extensions}")
+        raise ValidationError(f"Operation failed as extension type {extension_type_name.lower()} " +
+                              f"is not in allowed list of extension types {allowed_extensions}")
 
 
 def filter_hard_taints(node_initialization_taints: List[str]) -> List[str]:
@@ -442,3 +442,29 @@ def get_all_extensions_in_allow_list(result):
         if _check_if_extension_type_is_in_allow_list(obj.extension_type.lower()):
             output.append(obj)
     return output
+
+
+def get_extension_in_allow_list(result):
+    if _check_if_extension_type_is_in_allow_list(result.extension_type.lower()):
+        return result
+    return None
+
+
+def process_dns_overrides(overrides_dict, target_dict, build_override_func):
+    """Helper function to safely process DNS overrides with null checks.
+
+    Processes DNS override dictionaries from LocalDNS configuration,
+    filtering out null values and applying the build function to valid entries.
+
+    :param overrides_dict: Dictionary containing DNS overrides (can be None)
+    :param target_dict: Target dictionary to populate with processed overrides
+    :param build_override_func: Function to build override objects from dict values
+    """
+    if not isinstance(overrides_dict, dict):
+        raise InvalidArgumentValueError(
+            f"Expected a dictionary for DNS overrides, but got {type(overrides_dict).__name__}: {overrides_dict}"
+        )
+    if overrides_dict is not None:
+        for key, value in overrides_dict.items():
+            if value is not None:
+                target_dict[key] = build_override_func(value)
